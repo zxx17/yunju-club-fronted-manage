@@ -2,14 +2,15 @@
   <div class="app-container">
     <div style="margin-bottom: 20px">
       <el-alert
-        title="虚拟实验路由地址说明"
+        title="虚拟实验路由功能说明"
         type="warning"
         :closable="false"
         show-icon
       >
         <p>
-          虚拟实验使用WebGL、Three.js等技术实现，目前支持的路由地址已由项目初始化全部完成，自定义设计实验将在2.0版本发布！
+          虚拟实验使用WebGL、Three.js等技术实现，目前不支持自定义设计实验场景，列表预设场景项目初始化完成。用户可选择开发板从0开始
         </p>
+        <p>后台自定义设计实验将在2.0版本发布！</p>
       </el-alert>
     </div>
 
@@ -37,14 +38,7 @@
           @keyup.enter.native="handleQuery"
         />
       </el-form-item>
-      <el-form-item label="难度" prop="diffcult">
-        <el-input
-          v-model="queryParams.diffcult"
-          placeholder="请输入难度"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
+
       <el-form-item label="创建时间" prop="createdTime">
         <el-date-picker
           clearable
@@ -208,7 +202,7 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="实验排序" prop="sorted">
-          <el-input v-model="form.sorted" placeholder="请输入排序" />
+          <el-input v-model="form.sorted" placeholder="请输入排序0-100" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
