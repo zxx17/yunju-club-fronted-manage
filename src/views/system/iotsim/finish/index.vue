@@ -1,122 +1,26 @@
 <template>
-  <div class="app-container">
-    <el-form
-      :model="queryParams"
-      ref="queryForm"
-      size="small"
-      :inline="true"
-      v-show="showSearch"
-      label-width="68px"
-    >
-      <el-form-item label="完成用户id" prop="userId">
-        <el-input
-          v-model="queryParams.userId"
-          placeholder="请输入完成用户id"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="完成的仿真实验id" prop="simLabId">
-        <el-input
-          v-model="queryParams.simLabId"
-          placeholder="请输入完成的仿真实验id"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="是否完成 0未完成 1已完成" prop="isFinished">
-        <el-input
-          v-model="queryParams.isFinished"
-          placeholder="请输入是否完成 0未完成 1已完成"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="创建人" prop="createdBy">
-        <el-input
-          v-model="queryParams.createdBy"
-          placeholder="请输入创建人"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="创建时间" prop="createdTime">
-        <el-date-picker
-          clearable
-          v-model="queryParams.createdTime"
-          type="date"
-          value-format="yyyy-MM-dd"
-          placeholder="请选择创建时间"
-        >
-        </el-date-picker>
-      </el-form-item>
-      <el-form-item label="是否被删除 0为删除 1已删除" prop="isDeleted">
-        <el-input
-          v-model="queryParams.isDeleted"
-          placeholder="请输入是否被删除 0为删除 1已删除"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item>
-        <el-button
-          type="primary"
-          icon="el-icon-search"
-          size="mini"
-          @click="handleQuery"
-          >搜索</el-button
-        >
-        <el-button icon="el-icon-refresh" size="mini" @click="resetQuery"
-          >重置</el-button
-        >
-      </el-form-item>
-    </el-form>
-
-    <el-row :gutter="10" class="mb8">
-      <el-col :span="1.5">
-        <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['system:user:add']"
-          >新增</el-button
-        >
+  <div>
+    <el-row :gutter="20">
+      <!-- 趋势图所在的列 -->
+      <el-col :span="12">
+        <div ref="trendChart" style="width: 100%; height: 400px"></div>
       </el-col>
+      <!-- 条形图所在的列 -->
+      <el-col :span="12">
+        <div ref="barChart" style="width: 100%; height: 400px"></div>
+      </el-col>
+    </el-row>
+    <!-- 表格 -->
+    <el-row>
       <el-col :span="1.5">
         <el-button
           type="success"
-          plain
-          icon="el-icon-edit"
-          size="mini"
-          :disabled="single"
-          @click="handleUpdate"
-          v-hasPermi="['system:user:edit']"
-          >修改</el-button
-        >
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="danger"
-          plain
-          icon="el-icon-delete"
-          size="mini"
-          :disabled="multiple"
-          @click="handleDelete"
-          v-hasPermi="['system:user:remove']"
-          >删除</el-button
-        >
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
-          type="warning"
           plain
           icon="el-icon-download"
           size="mini"
           @click="handleExport"
           v-hasPermi="['system:user:export']"
-          >导出</el-button
+          >导出报告</el-button
         >
       </el-col>
       <right-toolbar
@@ -131,21 +35,20 @@
       @selection-change="handleSelectionChange"
     >
       <el-table-column type="selection" width="55" align="center" />
-      <el-table-column label="主键" align="center" prop="id" />
-      <el-table-column label="完成用户id" align="center" prop="userId" />
+      <el-table-column label="编号" align="center" prop="id" />
+      <el-table-column label="用户昵称" align="center" prop="nickName" />
+      <el-table-column label="实验名称" align="center" prop="simLabName" />
+      <el-table-column label="完成状态" align="center" prop="isFinished">
+        <template slot-scope="scope">
+          <span
+            :style="{ color: scope.row.isFinished === 1 ? 'green' : 'red' }"
+          >
+            {{ scope.row.isFinished === 1 ? "已完成" : "未完成" }}
+          </span>
+        </template>
+      </el-table-column>
       <el-table-column
-        label="完成的仿真实验id"
-        align="center"
-        prop="simLabId"
-      />
-      <el-table-column
-        label="是否完成 0未完成 1已完成"
-        align="center"
-        prop="isFinished"
-      />
-      <el-table-column label="创建人" align="center" prop="createdBy" />
-      <el-table-column
-        label="创建时间"
+        label="时间"
         align="center"
         prop="createdTime"
         width="180"
@@ -155,24 +58,11 @@
         </template>
       </el-table-column>
       <el-table-column
-        label="是否被删除 0为删除 1已删除"
-        align="center"
-        prop="isDeleted"
-      />
-      <el-table-column
         label="操作"
         align="center"
         class-name="small-padding fixed-width"
       >
         <template slot-scope="scope">
-          <el-button
-            size="mini"
-            type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['system:user:edit']"
-            >修改</el-button
-          >
           <el-button
             size="mini"
             type="text"
@@ -192,54 +82,12 @@
       :limit.sync="queryParams.pageSize"
       @pagination="getList"
     />
-
-    <!-- 添加或修改虚拟仿真实验用户记录对话框 -->
-    <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
-      <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="完成用户id" prop="userId">
-          <el-input v-model="form.userId" placeholder="请输入完成用户id" />
-        </el-form-item>
-        <el-form-item label="完成的仿真实验id" prop="simLabId">
-          <el-input
-            v-model="form.simLabId"
-            placeholder="请输入完成的仿真实验id"
-          />
-        </el-form-item>
-        <el-form-item label="是否完成 0未完成 1已完成" prop="isFinished">
-          <el-input
-            v-model="form.isFinished"
-            placeholder="请输入是否完成 0未完成 1已完成"
-          />
-        </el-form-item>
-        <el-form-item label="创建人" prop="createdBy">
-          <el-input v-model="form.createdBy" placeholder="请输入创建人" />
-        </el-form-item>
-        <el-form-item label="创建时间" prop="createdTime">
-          <el-date-picker
-            clearable
-            v-model="form.createdTime"
-            type="date"
-            value-format="yyyy-MM-dd"
-            placeholder="请选择创建时间"
-          >
-          </el-date-picker>
-        </el-form-item>
-        <el-form-item label="是否被删除 0为删除 1已删除" prop="isDeleted">
-          <el-input
-            v-model="form.isDeleted"
-            placeholder="请输入是否被删除 0为删除 1已删除"
-          />
-        </el-form-item>
-      </el-form>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="submitForm">确 定</el-button>
-        <el-button @click="cancel">取 消</el-button>
-      </div>
-    </el-dialog>
   </div>
 </template>
 
 <script>
+// 引入 ECharts
+import * as echarts from "echarts";
 import {
   listUser,
   getUser,
@@ -290,7 +138,83 @@ export default {
   created() {
     this.getList();
   },
+  mounted() {
+    // 在组件挂载后初始化图表
+    this.initTrendChart();
+    this.initBarChart();
+  },
   methods: {
+    // 折线
+    initTrendChart() {
+      // 基于准备好的dom，初始化echarts实例
+      var trendChart = echarts.init(this.$refs.trendChart);
+      // 指定图表的配置项和数据
+      var trendOption = {
+        title: {
+          text: "虚拟仿真实验周新增趋势",
+        },
+        tooltip: {
+          trigger: "axis",
+        },
+        xAxis: {
+          type: "category",
+          data: ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+        },
+        yAxis: {
+          type: "value",
+        },
+        series: [
+          {
+            data: [150, 230, 224, 218, 135, 147, 260],
+            type: "line",
+          },
+        ],
+      };
+      // 使用刚指定的配置项和数据显示图表。
+      trendChart.setOption(trendOption);
+    },
+    // 条形
+    initBarChart() {
+      // 基于准备好的dom，初始化echarts实例
+      var barChart = echarts.init(this.$refs.barChart);
+      // 指定图表的配置项和数据
+      var barOption = {
+        title: {
+          text: "虚拟仿真实验热门实验完成数量",
+        },
+        tooltip: {
+          trigger: "axis",
+        },
+        xAxis: {
+          type: "category",
+          data: ["实验1", "实验2", "实验3", "实验4", "实验5", "实验6", "实验7"],
+        },
+        yAxis: {
+          type: "value",
+        },
+        series: [
+          {
+            data: [
+              120,
+              {
+                value: 200,
+                itemStyle: {
+                  color: "#a90000",
+                },
+              },
+              150,
+              80,
+              70,
+              110,
+              130,
+            ],
+            type: "bar",
+          },
+        ],
+      };
+      // 使用刚指定的配置项和数据显示图表。
+      barChart.setOption(barOption);
+    },
     /** 查询虚拟仿真实验用户记录列表 */
     getList() {
       this.loading = true;
@@ -401,3 +325,25 @@ export default {
   },
 };
 </script>
+
+<style>
+.el-row {
+  margin-top: 20px;
+  margin-bottom: 20px;
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+.el-col {
+  border-radius: 4px;
+  background-color: #fff;
+  padding: 10px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 18px;
+  color: #333;
+}
+</style>
