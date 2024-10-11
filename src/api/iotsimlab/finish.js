@@ -42,3 +42,19 @@ export function delUser(id) {
     method: 'delete'
   })
 }
+
+// 近一周模拟实验完成情况
+export function userSimLabWeekData(){
+  return request({
+    url: '/iotsimlab/lab/finish/simLabWeekData',
+    method: 'get'
+  })
+}
+
+// 虚拟仿真实验完成数量
+export function simLabFinishData(){
+  return request({
+    url: '/iotsimlab/lab/finish/simLabFinishData',
+    method: 'get'
+  })
+}

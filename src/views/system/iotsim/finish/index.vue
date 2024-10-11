@@ -94,10 +94,11 @@ import {
   delUser,
   addUser,
   updateUser,
+  userSimLabWeekData,
+  simLabFinishData,
 } from "@/api/iotsimlab/finish";
 
 export default {
-  name: "User",
   data() {
     return {
       // 遮罩层
@@ -133,10 +134,38 @@ export default {
       form: {},
       // 表单校验
       rules: {},
+      // 近一周模拟实验完成情况数据列表
+      userSimLabWeekListData: [0, 0, 0, 0, 0, 0, 0],
+      //虚拟仿真实验完成数量x,y
+      simLabFinishDataX: [
+        "实验1",
+        "实验2",
+        "实验3",
+        "实验4",
+        "实验5",
+        "实验6",
+        "实验7",
+      ],
+      simLabFinishDataY: [
+        100,
+        {
+          value: 200,
+          itemStyle: {
+            color: "#a90000",
+          },
+        },
+        150,
+        80,
+        70,
+        110,
+        130,
+      ],
     };
   },
   created() {
     this.getList();
+    this.getUserSimLabWeekData();
+    this.getSimLabFinishData();
   },
   mounted() {
     // 在组件挂载后初始化图表
@@ -151,21 +180,21 @@ export default {
       // 指定图表的配置项和数据
       var trendOption = {
         title: {
-          text: "虚拟仿真实验周新增趋势",
+          text: "虚拟仿真实验近一周完成趋势",
         },
         tooltip: {
           trigger: "axis",
         },
         xAxis: {
           type: "category",
-          data: ["周一", "周二", "周三", "周四", "周五", "周六", "周日"],
+          data: ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
         },
         yAxis: {
           type: "value",
         },
         series: [
           {
-            data: [150, 230, 224, 218, 135, 147, 260],
+            data: this.userSimLabWeekListData,
             type: "line",
           },
         ],
@@ -180,34 +209,21 @@ export default {
       // 指定图表的配置项和数据
       var barOption = {
         title: {
-          text: "虚拟仿真实验热门实验完成数量",
+          text: "虚拟仿真实验完成数量前五",
         },
         tooltip: {
           trigger: "axis",
         },
         xAxis: {
           type: "category",
-          data: ["实验1", "实验2", "实验3", "实验4", "实验5", "实验6", "实验7"],
+          data: this.simLabFinishDataX,
         },
         yAxis: {
           type: "value",
         },
         series: [
           {
-            data: [
-              120,
-              {
-                value: 200,
-                itemStyle: {
-                  color: "#a90000",
-                },
-              },
-              150,
-              80,
-              70,
-              110,
-              130,
-            ],
+            data: this.simLabFinishDataY,
             type: "bar",
           },
         ],
@@ -222,6 +238,21 @@ export default {
         this.userList = response.rows;
         this.total = response.total;
         this.loading = false;
+      });
+    },
+    // 查询近一周模拟实验完成情况
+    getUserSimLabWeekData() {
+      userSimLabWeekData().then((response) => {
+        this.userSimLabWeekListData = response.rows;
+        this.initTrendChart();
+      });
+    },
+    // 查询虚拟仿真实验完成数量
+    getSimLabFinishData() {
+      simLabFinishData().then((response) => {
+        this.simLabFinishDataX = response.xAxis;
+        this.simLabFinishDataY = response.yAxis;
+        this.initBarChart();
       });
     },
     // 取消按钮
