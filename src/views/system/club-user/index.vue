@@ -56,7 +56,7 @@
 
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
-        <el-button
+        <!-- <el-button
           type="primary"
           plain
           icon="el-icon-plus"
@@ -64,7 +64,7 @@
           @click="handleAdd"
           v-hasPermi="['system:user:add']"
           >新增</el-button
-        >
+        > -->
       </el-col>
 
       <el-col :span="1.5">
@@ -378,9 +378,9 @@ export default {
       );
     },
     formatSex(row, column, cellValue, index) {
-      if (cellValue === 0) {
+      if (cellValue === 1) {
         return "男";
-      } else if (cellValue === 1) {
+      } else if (cellValue === 2) {
         return "女";
       } else {
         return "未知";
