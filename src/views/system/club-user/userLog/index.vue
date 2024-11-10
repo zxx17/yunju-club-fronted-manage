@@ -1,19 +1,5 @@
 <template>
   <div class="app-container">
-    <div style="margin-bottom: 20px">
-      <el-alert
-        title="虚拟实验路由功能说明"
-        type="warning"
-        :closable="false"
-        show-icon
-      >
-        <p>
-          虚拟实验使用wokwi-element组件实现，目前不支持自定义设计实验场景，列表预设场景项目初始化完成。用户可选择开发板从0开始
-        </p>
-        <p>后台自定义设计实验将在2.0版本发布！</p>
-      </el-alert>
-    </div>
-
     <el-form
       :model="queryParams"
       ref="queryForm"
@@ -22,23 +8,6 @@
       v-show="showSearch"
       label-width="68px"
     >
-      <el-form-item label="设备名称" prop="deviceName">
-        <el-input
-          v-model="queryParams.deviceName"
-          placeholder="请输入设备名称"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-      <el-form-item label="项目名称" prop="projectName">
-        <el-input
-          v-model="queryParams.projectName"
-          placeholder="请输入项目名称"
-          clearable
-          @keyup.enter.native="handleQuery"
-        />
-      </el-form-item>
-
       <el-form-item label="创建时间" prop="createdTime">
         <el-date-picker
           clearable
@@ -49,6 +18,7 @@
         >
         </el-date-picker>
       </el-form-item>
+
       <el-form-item>
         <el-button
           type="primary"
@@ -66,24 +36,13 @@
     <el-row :gutter="10" class="mb8">
       <el-col :span="1.5">
         <el-button
-          type="primary"
-          plain
-          icon="el-icon-plus"
-          size="mini"
-          @click="handleAdd"
-          v-hasPermi="['iotsimlab:lab:add']"
-          >新增</el-button
-        >
-      </el-col>
-      <el-col :span="1.5">
-        <el-button
           type="danger"
           plain
           icon="el-icon-delete"
           size="mini"
           :disabled="multiple"
           @click="handleDelete"
-          v-hasPermi="['iotsimlab:lab:remove']"
+          v-hasPermi="['system:userLog:remove']"
           >删除</el-button
         >
       </el-col>
@@ -94,7 +53,7 @@
           icon="el-icon-download"
           size="mini"
           @click="handleExport"
-          v-hasPermi="['iotsimlab:lab:export']"
+          v-hasPermi="['system:userLog:export']"
           >导出</el-button
         >
       </el-col>
@@ -106,28 +65,49 @@
 
     <el-table
       v-loading="loading"
-      :data="labList"
+      :data="userLogList"
       @selection-change="handleSelectionChange"
-      :default-sort="{ prop: 'deviceName', order: 'ascending' }"
     >
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="编号" align="center" prop="id" />
-      <el-table-column label="设备名称" align="center" prop="deviceName" />
-      <el-table-column label="项目名称" align="center" prop="projectName" />
-      <el-table-column
-        label="推荐项目"
-        align="center"
-        prop="projectType"
-        :formatter="formatType"
-      />
-      <el-table-column label="路由地址" align="center" prop="projectUrl" />
-      <el-table-column
-        label="难度"
-        align="center"
-        prop="diffcult"
-        :formatter="formatDif"
-      />
-      <el-table-column label="排序" align="center" prop="sorted" />
+      <el-table-column label="用户" align="center" prop="userName" />
+      <el-table-column label="操作类别" align="center">
+        <template slot-scope="scope">
+          {{ operationTypeMap[scope.row.operationType] }}
+        </template>
+      </el-table-column>
+      <el-table-column label="操作结果" align="center">
+        <template slot-scope="scope">
+          <span v-if="scope.row.operationResult.length <= 30">{{
+            scope.row.operationResult
+          }}</span>
+          <el-popover
+            v-else
+            placement="top"
+            trigger="hover"
+            :content="scope.row.operationResult"
+          >
+            <span slot="reference">{{
+              scope.row.operationResult | truncate(30)
+            }}</span>
+          </el-popover>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作详情" align="center">
+        <template slot-scope="scope">
+          <span v-if="scope.row.details.length <= 30">{{
+            scope.row.details
+          }}</span>
+          <el-popover
+            v-else
+            placement="top"
+            trigger="hover"
+            :content="scope.row.details"
+          >
+            <span slot="reference">{{ scope.row.details | truncate(30) }}</span>
+          </el-popover>
+        </template>
+      </el-table-column>
 
       <el-table-column
         label="创建时间"
@@ -139,6 +119,7 @@
           <span>{{ parseTime(scope.row.createdTime, "{y}-{m}-{d}") }}</span>
         </template>
       </el-table-column>
+
       <el-table-column
         label="操作"
         align="center"
@@ -148,17 +129,9 @@
           <el-button
             size="mini"
             type="text"
-            icon="el-icon-edit"
-            @click="handleUpdate(scope.row)"
-            v-hasPermi="['iotsimlab:lab:edit']"
-            >修改</el-button
-          >
-          <el-button
-            size="mini"
-            type="text"
             icon="el-icon-delete"
             @click="handleDelete(scope.row)"
-            v-hasPermi="['iotsimlab:lab:remove']"
+            v-hasPermi="['system:userLog:remove']"
             >删除</el-button
           >
         </template>
@@ -173,36 +146,41 @@
       @pagination="getList"
     />
 
-    <!-- 添加或修改虚拟仿真实验对话框 -->
+    <!-- 添加或修改社区C端用户操作日志对话框 -->
     <el-dialog :title="title" :visible.sync="open" width="500px" append-to-body>
       <el-form ref="form" :model="form" :rules="rules" label-width="80px">
-        <el-form-item label="设备名称" prop="deviceName">
-          <el-input v-model="form.deviceName" placeholder="请输入设备名称" />
+        <el-form-item label="操作结果" prop="operationResult">
+          <el-input
+            v-model="form.operationResult"
+            type="textarea"
+            placeholder="请输入内容"
+          />
         </el-form-item>
-        <el-form-item label="项目名称" prop="projectName">
-          <el-input v-model="form.projectName" placeholder="请输入项目名称" />
+        <el-form-item label="操作详情" prop="details">
+          <el-input
+            v-model="form.details"
+            type="textarea"
+            placeholder="请输入内容"
+          />
         </el-form-item>
-        <el-form-item label="路由地址" prop="projectUrl">
-          <el-input v-model="form.projectUrl" placeholder="请输入路由地址" />
+        <el-form-item label="创建人" prop="createdBy">
+          <el-input v-model="form.createdBy" placeholder="请输入创建人" />
         </el-form-item>
-        <el-form-item label="项目描述" prop="projectDesc">
-          <el-input v-model="form.projectDesc" placeholder="请输入项目描述" />
+        <el-form-item label="创建时间" prop="createdTime">
+          <el-date-picker
+            clearable
+            v-model="form.createdTime"
+            type="date"
+            value-format="yyyy-MM-dd"
+            placeholder="请选择创建时间"
+          >
+          </el-date-picker>
         </el-form-item>
-        <el-form-item label="是否推荐" prop="projectType">
-          <el-radio-group v-model="form.projectType">
-            <el-radio :label="1">是</el-radio>
-            <el-radio :label="0">否</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="实验难度" prop="diffcult">
-          <el-radio-group v-model="form.diffcult">
-            <el-radio :label="1">初级</el-radio>
-            <el-radio :label="2">中级</el-radio>
-            <el-radio :label="3">高级</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="实验排序" prop="sorted">
-          <el-input v-model="form.sorted" placeholder="请输入排序0-100" />
+        <el-form-item label="是否被删除 0为删除 1已删除" prop="isDeleted">
+          <el-input
+            v-model="form.isDeleted"
+            placeholder="请输入是否被删除 0为删除 1已删除"
+          />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -215,15 +193,15 @@
 
 <script>
 import {
-  listLab,
-  getLab,
-  delLab,
-  addLab,
-  updateLab,
-} from "@/api/iotsimlab/lab";
+  listUserLog,
+  getUserLog,
+  delUserLog,
+  addUserLog,
+  updateUserLog,
+} from "@/api/system/userLog";
 
 export default {
-  name: "Lab",
+  name: "UserLog",
   data() {
     return {
       // 遮罩层
@@ -238,8 +216,8 @@ export default {
       showSearch: true,
       // 总条数
       total: 0,
-      // 虚拟仿真实验表格数据
-      labList: [],
+      // 社区C端用户操作日志表格数据
+      userLogList: [],
       // 弹出层标题
       title: "",
       // 是否显示弹出层
@@ -248,33 +226,49 @@ export default {
       queryParams: {
         pageNum: 1,
         pageSize: 10,
-        deviceName: null,
-        projectName: null,
-        projectType: null,
-        projectUrl: null,
-        projectDesc: null,
-        diffcult: null,
-        sorted: null,
-        finishedCount: null,
+        userName: null,
+        operationType: null,
+        operationResult: null,
+        details: null,
         createdBy: null,
         createdTime: null,
         isDeleted: null,
       },
+      //操作类别
+      operationTypeMap: {
+        1: "答题",
+        2: "仿真实验",
+        3: "场景实验",
+        4: "发布",
+      },
       // 表单参数
       form: {},
       // 表单校验
-      rules: {},
+      rules: {
+        userName: [
+          { required: true, message: "用户账号不能为空", trigger: "blur" },
+        ],
+      },
     };
+  },
+  filters: {
+    truncate: function (text, length, suffix) {
+      if (text.length > length) {
+        return text.substring(0, length) + (suffix || "...");
+      } else {
+        return text;
+      }
+    },
   },
   created() {
     this.getList();
   },
   methods: {
-    /** 查询虚拟仿真实验列表 */
+    /** 查询社区C端用户操作日志列表 */
     getList() {
       this.loading = true;
-      listLab(this.queryParams).then((response) => {
-        this.labList = response.rows;
+      listUserLog(this.queryParams).then((response) => {
+        this.userLogList = response.rows;
         this.total = response.total;
         this.loading = false;
       });
@@ -288,14 +282,10 @@ export default {
     reset() {
       this.form = {
         id: null,
-        deviceName: null,
-        projectName: null,
-        projectType: null,
-        projectUrl: null,
-        projectDesc: null,
-        diffcult: null,
-        sorted: null,
-        finishedCount: null,
+        userName: null,
+        operationType: null,
+        operationResult: null,
+        details: null,
         createdBy: null,
         createdTime: null,
         updateBy: null,
@@ -324,16 +314,16 @@ export default {
     handleAdd() {
       this.reset();
       this.open = true;
-      this.title = "添加虚拟仿真实验";
+      this.title = "添加社区C端用户操作日志";
     },
     /** 修改按钮操作 */
     handleUpdate(row) {
       this.reset();
       const id = row.id || this.ids;
-      getLab(id).then((response) => {
+      getUserLog(id).then((response) => {
         this.form = response.data;
         this.open = true;
-        this.title = "修改虚拟仿真实验";
+        this.title = "修改社区C端用户操作日志";
       });
     },
     /** 提交按钮 */
@@ -341,13 +331,13 @@ export default {
       this.$refs["form"].validate((valid) => {
         if (valid) {
           if (this.form.id != null) {
-            updateLab(this.form).then((response) => {
+            updateUserLog(this.form).then((response) => {
               this.$modal.msgSuccess("修改成功");
               this.open = false;
               this.getList();
             });
           } else {
-            addLab(this.form).then((response) => {
+            addUserLog(this.form).then((response) => {
               this.$modal.msgSuccess("新增成功");
               this.open = false;
               this.getList();
@@ -360,9 +350,9 @@ export default {
     handleDelete(row) {
       const ids = row.id || this.ids;
       this.$modal
-        .confirm('是否确认删除虚拟仿真实验编号为"' + ids + '"的数据项？')
+        .confirm('是否确认删除社区C端用户操作日志编号为"' + ids + '"的数据项？')
         .then(function () {
-          return delLab(ids);
+          return delUserLog(ids);
         })
         .then(() => {
           this.getList();
@@ -373,30 +363,12 @@ export default {
     /** 导出按钮操作 */
     handleExport() {
       this.download(
-        "iotsimlab/lab/export",
+        "system/userLog/export",
         {
           ...this.queryParams,
         },
-        `lab_${new Date().getTime()}.xlsx`
+        `userLog_${new Date().getTime()}.xlsx`
       );
-    },
-    formatType(row, column, cellValue, index) {
-      if (cellValue === 0) {
-        return "否";
-      } else if (cellValue === 1) {
-        return "是";
-      } else {
-        return "未知";
-      }
-    },
-    formatDif(row, column, cellValue, index) {
-      if (cellValue === 1) {
-        return "初级";
-      } else if (cellValue === 2) {
-        return "中级";
-      } else if (cellValue === 3) {
-        return "高级";
-      }
     },
   },
 };
