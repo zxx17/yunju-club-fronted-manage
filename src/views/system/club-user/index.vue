@@ -113,6 +113,13 @@
         prop="sex"
         :formatter="formatSex"
       />
+      <el-table-column label="出题权限" align="center" prop="roleKey">
+        <template slot-scope="scope">
+          <span>
+            {{ scope.row.roleKey === "vip_user" ? "有" : "无" }}
+          </span>
+        </template>
+      </el-table-column>
       <el-table-column
         label="状态"
         align="center"
@@ -176,7 +183,7 @@
         <el-form-item label="昵称" prop="nickName">
           <el-input v-model="form.nickName" placeholder="请输入昵称" />
         </el-form-item>
-        <el-form-item label="性别" prop="nickName">
+        <el-form-item label="性别" prop="sex">
           <el-radio-group v-model="form.sex">
             <el-radio :label="1">男</el-radio>
             <el-radio :label="2">女</el-radio>
@@ -195,6 +202,12 @@
           <el-radio-group v-model="form.status">
             <el-radio :label="0">正常</el-radio>
             <el-radio :label="1">禁用</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="出题权限" prop="roleKey">
+          <el-radio-group v-model="form.roleKey">
+            <el-radio :label="`vip_user`">有</el-radio>
+            <el-radio :label="`normal_user`">无</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
